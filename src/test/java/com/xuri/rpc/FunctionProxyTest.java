@@ -3,33 +3,38 @@ package com.xuri.rpc;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 函数代理测试，对应TS版本的function_proxy.test.ts。
  * 测试CallableObject的远程调用（__call__模式）。
+ * 主对象是真正的Java对象，其方法返回函数代理。
  */
 class FunctionProxyTest {
+
+    public static class MultiplierService {
+        private final String hostId;
+
+        public MultiplierService(String hostId) {
+            this.hostId = hostId;
+        }
+
+        public Object getMultiplier() {
+            CallableObject fn = new CallableObject(new CallableObject.RpcFunction() {
+                public Object call(Object... innerArgs) {
+                    int a = ((Number) innerArgs[0]).intValue();
+                    int b = ((Number) innerArgs[1]).intValue();
+                    return a * b;
+                }
+            });
+            return Client.asProxy(fn, hostId);
+        }
+    }
 
     @Test
     void testCallableProxy() throws Exception {
         final String serverId = "funcProxyServer";
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("getMultiplier", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) {
-                CallableObject fn = new CallableObject(new CallableObject.RpcFunction() {
-                    public Object call(Object... innerArgs) {
-                        int a = ((Number) innerArgs[0]).intValue();
-                        int b = ((Number) innerArgs[1]).intValue();
-                        return a * b;
-                    }
-                });
-                return Client.asProxy(fn, serverId);
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new MultiplierService(serverId), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String sid) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
                 // getMultiplier返回一个RemoteCallable
@@ -42,24 +47,28 @@ class FunctionProxyTest {
         }, serverId, "funcProxyClient");
     }
 
+    public static class CounterService {
+        private final String hostId;
+        private final AtomicInteger callCount = new AtomicInteger(0);
+
+        public CounterService(String hostId) {
+            this.hostId = hostId;
+        }
+
+        public Object getCounter() {
+            CallableObject fn = new CallableObject(new CallableObject.RpcFunction() {
+                public Object call(Object... innerArgs) {
+                    return callCount.incrementAndGet();
+                }
+            });
+            return Client.asProxy(fn, hostId);
+        }
+    }
+
     @Test
     void testCallableMultipleCalls() throws Exception {
         final String serverId = "funcProxyServer2";
-        final AtomicInteger callCount = new AtomicInteger(0);
-
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("getCounter", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) {
-                CallableObject fn = new CallableObject(new CallableObject.RpcFunction() {
-                    public Object call(Object... innerArgs) {
-                        return callCount.incrementAndGet();
-                    }
-                });
-                return Client.asProxy(fn, serverId);
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new CounterService(serverId), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String sid) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
                 Object counter = proxy.invoke("getCounter");

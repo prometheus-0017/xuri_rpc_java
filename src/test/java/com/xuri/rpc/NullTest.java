@@ -7,20 +7,20 @@ import java.util.*;
 
 /**
  * Null处理测试，对应TS版本的null.test.ts和null_in_dict_test.ts。
+ * 主对象是真正的Java对象；可能为null的参数使用包装类型声明。
  */
 class NullTest {
 
+    public static class NullArgService {
+        public int add(Integer a, Integer b, Object callback) {
+            assertNull(callback, "callback should be null");
+            return a + b;
+        }
+    }
+
     @Test
     void testNullArgument() throws Exception {
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("add", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) {
-                assertNull(args[2], "callback should be null");
-                return ((Number) args[0]).intValue() + ((Number) args[1]).intValue();
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new NullArgService(), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String serverId) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
                 Object result = proxy.invoke("add", 1, 2, null);
@@ -29,20 +29,17 @@ class NullTest {
         });
     }
 
+    public static class NullDictService {
+        public int checkNull(Map<String, Object> pack) {
+            assertNull(pack.get("b"), "b should be null");
+            assertNull(pack.get("c"), "c should be null");
+            return ((Number) pack.get("a")).intValue() + 1;
+        }
+    }
+
     @Test
     void testNullInDict() throws Exception {
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("checkNull", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> pack = (Map<String, Object>) args[0];
-                assertNull(pack.get("b"), "b should be null");
-                assertNull(pack.get("c"), "c should be null");
-                return ((Number) pack.get("a")).intValue() + 1;
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new NullDictService(), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String serverId) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
                 Map<String, Object> pack = new LinkedHashMap<String, Object>();
@@ -55,21 +52,18 @@ class NullTest {
         });
     }
 
+    public static class MixedNullService {
+        public int mixedNull(Map<String, Object> pack) {
+            assertEquals(10, ((Number) pack.get("x")).intValue());
+            assertNull(pack.get("y"));
+            assertEquals(30, ((Number) pack.get("z")).intValue());
+            return ((Number) pack.get("x")).intValue() + ((Number) pack.get("z")).intValue();
+        }
+    }
+
     @Test
     void testMixedNullInDict() throws Exception {
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("mixedNull", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> pack = (Map<String, Object>) args[0];
-                assertEquals(10, ((Number) pack.get("x")).intValue());
-                assertNull(pack.get("y"));
-                assertEquals(30, ((Number) pack.get("z")).intValue());
-                return ((Number) pack.get("x")).intValue() + ((Number) pack.get("z")).intValue();
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new MixedNullService(), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String serverId) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
                 Map<String, Object> pack = new LinkedHashMap<String, Object>();

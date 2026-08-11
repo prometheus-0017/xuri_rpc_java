@@ -121,16 +121,18 @@ class UnitApiTest {
         assertEquals(0, receiver.currentWaitingCount());
     }
 
+    public static class HelloService {
+        public String hello() {
+            return "world";
+        }
+    }
+
     @Test
     void testMessageReceiverSetMain() {
         RpcFramework.reset();
         RpcFramework.setHostId("setMainTest");
         MessageReceiver receiver = new MessageReceiver("setMainTest");
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("hello", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) { return "world"; }
-        }));
-        receiver.setMain(mainObj);
+        receiver.setMain(new HelloService());
         Object mainRetrieved = receiver.getProxyManager().getById("main");
         assertNotNull(mainRetrieved);
     }

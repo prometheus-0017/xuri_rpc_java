@@ -7,19 +7,19 @@ import java.util.*;
 
 /**
  * 异常处理测试，对应TS版本的exception.test.ts和error_handling.test.ts。
+ * 主对象是真正的Java对象，服务端方法抛出的异常应传播回客户端。
  */
 class ExceptionTest {
 
+    public static class FailingService {
+        public int add(int a, int b) {
+            throw new RuntimeException("testException");
+        }
+    }
+
     @Test
     void testServerExceptionPropagation() throws Exception {
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("add", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) {
-                throw new RuntimeException("testException");
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new FailingService(), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String serverId) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
                 boolean caught = false;
@@ -35,6 +35,12 @@ class ExceptionTest {
         });
     }
 
+    public static class HelloService {
+        public String hello() {
+            return "world";
+        }
+    }
+
     @Test
     void testObjectNotFoundViaDumpChannel() throws Exception {
         RpcFramework.reset();
@@ -43,11 +49,7 @@ class ExceptionTest {
 
         DumpChannel channel = new DumpChannel();
         DumpChannel.ServerFactory server = channel.createServer(serverHostId);
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("hello", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) { return "world"; }
-        }));
-        server.serve(mainObj);
+        server.serve(new HelloService());
         DumpChannel.ClientResult clientResult = channel.createMain(clientHostId);
         Client client = clientResult.client;
 

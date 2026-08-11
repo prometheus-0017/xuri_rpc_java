@@ -34,27 +34,24 @@ class ObjectProxyTest {
         }
     }
 
+    public static class DictAddService {
+        public int add(Map<String, Object> pack) throws Exception {
+            // pack中的a, b, c是远程代理对象
+            RemoteProxyObject a = (RemoteProxyObject) pack.get("a");
+            RemoteProxyObject b = (RemoteProxyObject) pack.get("b");
+            RemoteProxyObject c = (RemoteProxyObject) pack.get("c");
+            a.invoke("increase");
+            c.invoke("increase");
+            b.invoke("increase");
+            int va = ((Number) a.invoke("getValue")).intValue();
+            int vb = ((Number) b.invoke("getValue")).intValue();
+            return va + vb;
+        }
+    }
+
     @Test
     void testObjectInDict() throws Exception {
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("add", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) throws Exception {
-                // args[0] 是一个Map，其中a, b, c是远程代理对象
-                @SuppressWarnings("unchecked")
-                Map<String, Object> pack = (Map<String, Object>) args[0];
-                RemoteProxyObject a = (RemoteProxyObject) pack.get("a");
-                RemoteProxyObject b = (RemoteProxyObject) pack.get("b");
-                RemoteProxyObject c = (RemoteProxyObject) pack.get("c");
-                a.invoke("increase");
-                c.invoke("increase");
-                b.invoke("increase");
-                int va = ((Number) a.invoke("getValue")).intValue();
-                int vb = ((Number) b.invoke("getValue")).intValue();
-                return va + vb;
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new DictAddService(), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String serverId) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
                 NumberObject a = new NumberObject(0);
@@ -74,26 +71,23 @@ class ObjectProxyTest {
         });
     }
 
+    public static class ArrayAddService {
+        public int add(List<Object> pack) throws Exception {
+            RemoteProxyObject a = (RemoteProxyObject) pack.get(0);
+            RemoteProxyObject b = (RemoteProxyObject) pack.get(1);
+            RemoteProxyObject c = (RemoteProxyObject) pack.get(2);
+            a.invoke("increase");
+            c.invoke("increase");
+            b.invoke("increase");
+            int va = ((Number) a.invoke("getValue")).intValue();
+            int vb = ((Number) b.invoke("getValue")).intValue();
+            return va + vb;
+        }
+    }
+
     @Test
     void testObjectInArray() throws Exception {
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("add", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) throws Exception {
-                @SuppressWarnings("unchecked")
-                List<Object> pack = (List<Object>) args[0];
-                RemoteProxyObject a = (RemoteProxyObject) pack.get(0);
-                RemoteProxyObject b = (RemoteProxyObject) pack.get(1);
-                RemoteProxyObject c = (RemoteProxyObject) pack.get(2);
-                a.invoke("increase");
-                c.invoke("increase");
-                b.invoke("increase");
-                int va = ((Number) a.invoke("getValue")).intValue();
-                int vb = ((Number) b.invoke("getValue")).intValue();
-                return va + vb;
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new ArrayAddService(), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String serverId) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
                 NumberObject a = new NumberObject(0);
@@ -110,32 +104,29 @@ class ObjectProxyTest {
         });
     }
 
+    public static class ItemProcessService {
+        public int process(List<Object> items) throws Exception {
+            for (Object item : items) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> entry = (Map<String, Object>) item;
+                RemoteProxyObject obj = (RemoteProxyObject) entry.get("obj");
+                obj.invoke("increase");
+            }
+            @SuppressWarnings("unchecked")
+            Map<String, Object> first = (Map<String, Object>) items.get(0);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> second = (Map<String, Object>) items.get(1);
+            RemoteProxyObject obj0 = (RemoteProxyObject) first.get("obj");
+            RemoteProxyObject obj1 = (RemoteProxyObject) second.get("obj");
+            int v0 = ((Number) obj0.invoke("getValue")).intValue();
+            int v1 = ((Number) obj1.invoke("getValue")).intValue();
+            return v0 + v1;
+        }
+    }
+
     @Test
     void testObjectInDictInArray() throws Exception {
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("process", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) throws Exception {
-                @SuppressWarnings("unchecked")
-                List<Object> items = (List<Object>) args[0];
-                for (Object item : items) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> entry = (Map<String, Object>) item;
-                    RemoteProxyObject obj = (RemoteProxyObject) entry.get("obj");
-                    obj.invoke("increase");
-                }
-                @SuppressWarnings("unchecked")
-                Map<String, Object> first = (Map<String, Object>) items.get(0);
-                @SuppressWarnings("unchecked")
-                Map<String, Object> second = (Map<String, Object>) items.get(1);
-                RemoteProxyObject obj0 = (RemoteProxyObject) first.get("obj");
-                RemoteProxyObject obj1 = (RemoteProxyObject) second.get("obj");
-                int v0 = ((Number) obj0.invoke("getValue")).intValue();
-                int v1 = ((Number) obj1.invoke("getValue")).intValue();
-                return v0 + v1;
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new ItemProcessService(), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String serverId) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
                 NumberObject a = new NumberObject(1);

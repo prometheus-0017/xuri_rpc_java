@@ -192,7 +192,7 @@ public class MessageReceiver {
                 }
             } else {
                 if (shouldWithContext) {
-                    Method targetMethod = findMethod(object, method);
+                    Method targetMethod = findMethod(object, method, args.toArray());
                     result = withContext(message, clientForCallBack, args, targetMethod);
                 } else {
                     result = invokeMethod(object, method, args.toArray());
@@ -274,7 +274,7 @@ public class MessageReceiver {
                 if (target instanceof Method) {
                     Method m = (Method) target;
                     Object obj = getProxyManager().getById(message.getObjectId());
-                    result[0] = m.invoke(obj, args.toArray());
+                    result[0] = m.invoke(obj, RemoteObjectAdapter.adaptArgs(m, args.toArray()));
                 } else {
                     result[0] = invokeCallable(target, args.toArray());
                 }
@@ -329,9 +329,10 @@ public class MessageReceiver {
 
     /**
      * 通过反射调用对象的方法。
+     * 参数会先经过RemoteObjectAdapter适配，使普通Java对象无需改动即可接收远程对象。
      */
     private Object invokeMethod(Object obj, String methodName, Object[] args) throws Exception {
-        Method method = findMethod(obj, methodName);
+        Method method = findMethod(obj, methodName, args);
         if (method == null) {
             // 尝试在Map中查找
             if (obj instanceof Map) {
@@ -343,23 +344,30 @@ public class MessageReceiver {
             }
             throw new RuntimeException("Method not found: " + methodName + " on " + obj.getClass().getName());
         }
-        return method.invoke(obj, args);
+        return method.invoke(obj, RemoteObjectAdapter.adaptArgs(method, args));
     }
 
     /**
      * 查找匹配的方法。
+     * 优先选择参数可适配的重载，其次是参数个数相同的重载。
      */
-    private Method findMethod(Object obj, String methodName) {
+    private Method findMethod(Object obj, String methodName, Object[] args) {
         if (obj instanceof Map) {
             return null; // Map不使用反射
         }
-        Class<?> clazz = obj.getClass();
-        for (Method m : clazz.getMethods()) {
-            if (m.getName().equals(methodName)) {
+        int argCount = (args != null) ? args.length : 0;
+        Method sameArity = null;
+        Method nameMatched = null;
+        for (Method m : obj.getClass().getMethods()) {
+            if (!m.getName().equals(methodName)) continue;
+            if (nameMatched == null) nameMatched = m;
+            if (m.getParameterTypes().length != argCount) continue;
+            if (RemoteObjectAdapter.isAdaptable(m.getParameterTypes(), args)) {
                 return m;
             }
+            if (sameArity == null) sameArity = m;
         }
-        return null;
+        return (sameArity != null) ? sameArity : nameMatched;
     }
 
     /**

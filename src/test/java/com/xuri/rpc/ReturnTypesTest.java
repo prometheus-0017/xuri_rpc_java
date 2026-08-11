@@ -7,19 +7,56 @@ import java.util.*;
 
 /**
  * 返回类型测试，对应TS版本的return_types.test.ts。
+ * 主对象是一个真正的Java对象，各方法返回不同类型的值。
+ * 注意：double是Java关键字，因此翻倍方法命名为doubleIt。
  */
 class ReturnTypesTest {
 
+    public static class MainService {
+        public String greet(String name) {
+            return "hello " + name;
+        }
+
+        public boolean isPositive(int value) {
+            return value > 0;
+        }
+
+        public Map<String, Object> getData() {
+            Map<String, Object> result = new LinkedHashMap<String, Object>();
+            result.put("a", 1);
+            result.put("b", "hello");
+            result.put("c", true);
+            return result;
+        }
+
+        public Object doNothing() {
+            return null;
+        }
+
+        public int doubleIt(int value) {
+            return value * 2;
+        }
+
+        public Map<String, Object> getNested() {
+            Map<String, Object> inner = new LinkedHashMap<String, Object>();
+            inner.put("inner", 42);
+            Map<String, Object> outer = new LinkedHashMap<String, Object>();
+            outer.put("outer", inner);
+            return outer;
+        }
+
+        public List<Object> getList() {
+            List<Object> list = new ArrayList<Object>();
+            list.add(1);
+            list.add("two");
+            list.add(true);
+            return list;
+        }
+    }
+
     @Test
     void testReturnString() throws Exception {
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("greet", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) {
-                return "hello " + args[0];
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new MainService(), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String serverId) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
                 assertEquals("hello world", proxy.invoke("greet", "world"));
@@ -29,14 +66,7 @@ class ReturnTypesTest {
 
     @Test
     void testReturnBoolean() throws Exception {
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("isPositive", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) {
-                return ((Number) args[0]).intValue() > 0;
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new MainService(), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String serverId) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
                 assertEquals(true, proxy.invoke("isPositive", 5));
@@ -47,18 +77,7 @@ class ReturnTypesTest {
 
     @Test
     void testReturnPlainDict() throws Exception {
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("getData", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) {
-                Map<String, Object> result = new LinkedHashMap<String, Object>();
-                result.put("a", 1);
-                result.put("b", "hello");
-                result.put("c", true);
-                return result;
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new MainService(), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String serverId) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
                 @SuppressWarnings("unchecked")
@@ -72,14 +91,7 @@ class ReturnTypesTest {
 
     @Test
     void testReturnNull() throws Exception {
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("doNothing", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) {
-                return null;
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new MainService(), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String serverId) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
                 assertNull(proxy.invoke("doNothing"));
@@ -89,35 +101,17 @@ class ReturnTypesTest {
 
     @Test
     void testReturnNumber() throws Exception {
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("double", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) {
-                return ((Number) args[0]).intValue() * 2;
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new MainService(), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String serverId) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
-                assertEquals(14, ((Number) proxy.invoke("double", 7)).intValue());
+                assertEquals(14, ((Number) proxy.invoke("doubleIt", 7)).intValue());
             }
         });
     }
 
     @Test
     void testReturnNestedDict() throws Exception {
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("getNested", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) {
-                Map<String, Object> inner = new LinkedHashMap<String, Object>();
-                inner.put("inner", 42);
-                Map<String, Object> outer = new LinkedHashMap<String, Object>();
-                outer.put("outer", inner);
-                return outer;
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new MainService(), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String serverId) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
                 @SuppressWarnings("unchecked")
@@ -131,18 +125,7 @@ class ReturnTypesTest {
 
     @Test
     void testReturnListOfPrimitives() throws Exception {
-        Map<String, Object> mainObj = new LinkedHashMap<String, Object>();
-        mainObj.put("getList", new CallableObject(new CallableObject.RpcFunction() {
-            public Object call(Object... args) {
-                List<Object> list = new ArrayList<Object>();
-                list.add(1);
-                list.add("two");
-                list.add(true);
-                return list;
-            }
-        }));
-
-        TestHelper.mainFunc(mainObj, new TestHelper.TestProcess() {
+        TestHelper.mainFunc(new MainService(), new TestHelper.TestProcess() {
             public void run(Client client, Object main, String serverId) throws Exception {
                 RemoteProxyObject proxy = (RemoteProxyObject) main;
                 @SuppressWarnings("unchecked")
