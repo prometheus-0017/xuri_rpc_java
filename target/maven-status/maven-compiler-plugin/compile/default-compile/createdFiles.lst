@@ -35,7 +35,6 @@ com\xuri\rpc\DumpChannel.class
 com\xuri\rpc\ISender.class
 com\xuri\rpc\MessageReceiver$4.class
 com\xuri\rpc\ObjectOfProxyManager.class
-com\xuri\rpc\RemoteObjectAdapterFactory.class
 com\xuri\rpc\DumpChannel$1.class
 com\xuri\rpc\MessageReceiver$NextFunction.class
 com\xuri\rpc\Client$2.class

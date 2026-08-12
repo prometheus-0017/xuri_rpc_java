@@ -6,12 +6,10 @@ com\xuri\rpc\ObjectProxyTest$2.class
 com\xuri\rpc\ReturnTypesTest$2.class
 com\xuri\rpc\NullTest$NullDictService.class
 com\xuri\rpc\InterfaceAdaptTest$3.class
-com\xuri\rpc\InterfaceAdaptTest$ConcreteService.class
 com\xuri\rpc\ObjectProxyTest$1.class
 com\xuri\rpc\CallbackTest$1$1.class
 com\xuri\rpc\InterfaceAdaptTest$2$1.class
 com\xuri\rpc\CallbackTest$MainService.class
-com\xuri\rpc\InterfaceAdaptTest$6.class
 com\xuri\rpc\NullTest$NullArgService.class
 com\xuri\rpc\FunctionProxyTest$MultiplierService$1.class
 com\xuri\rpc\NullTest$3.class
@@ -29,7 +27,6 @@ com\xuri\rpc\InterfaceAdaptTest$PlainService.class
 com\xuri\rpc\ReturnTypesTest$4.class
 com\xuri\rpc\ExceptionTest$FailingService.class
 com\xuri\rpc\InterfaceAdaptTest$Counter.class
-com\xuri\rpc\InterfaceAdaptTest$5.class
 com\xuri\rpc\UnitApiTest.class
 com\xuri\rpc\ReturnTypesTest$7.class
 com\xuri\rpc\FunctionProxyTest$1.class
@@ -48,7 +45,6 @@ com\xuri\rpc\TestHelper.class
 com\xuri\rpc\InterfaceAdaptTest$4.class
 com\xuri\rpc\ReturnTypesTest$6.class
 com\xuri\rpc\ExceptionTest$1.class
-com\xuri\rpc\InterfaceAdaptTest$ConcreteParamService.class
 com\xuri\rpc\FunctionProxyTest$CounterService$1.class
 com\xuri\rpc\ExceptionTest.class
 com\xuri\rpc\NullTest.class

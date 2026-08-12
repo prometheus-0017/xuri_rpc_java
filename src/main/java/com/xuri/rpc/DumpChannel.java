@@ -1,7 +1,7 @@
 package com.xuri.rpc;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 /**
  * 本地序列化通道，对应TS版本的DumpChannel。
@@ -13,11 +13,12 @@ public class DumpChannel {
     private volatile MessageReceiver clientSideReceiver;
     private volatile Client serverSideClient;
     private volatile Client clientSideClient;
-    private final ObjectMapper objectMapper;
+    private final Gson gson;
 
     public DumpChannel() {
-        this.objectMapper = new ObjectMapper();
-        this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.gson = new GsonBuilder()
+                .serializeNulls()
+                .create();
     }
 
     public void setServerSide(MessageReceiver messageReceiver, Client client) {
@@ -32,14 +33,14 @@ public class DumpChannel {
 
     /**
      * 发送消息到服务端。
-     * 通过Jackson序列化/反序列化模拟真实网络传输。
+     * 通过Gson序列化/反序列化模拟真实网络传输。
      * 注意：不使用synchronized，因为服务端处理请求时需要发送响应回客户端，
      * 如果同一个线程持有锁会导致死锁。线程安全由底层RPC机制保证。
      */
     public void sendToServer(Object message) throws Exception {
         // 序列化再反序列化，模拟网络传输
-        String json = objectMapper.writeValueAsString(message);
-        Object deserialized = objectMapper.readValue(json, Object.class);
+        String json = gson.toJson(message);
+        Object deserialized = gson.fromJson(json, Object.class);
         serverSideReceiver.onReceiveMessage(deserialized, serverSideClient);
     }
 
@@ -47,8 +48,8 @@ public class DumpChannel {
      * 发送消息到客户端。
      */
     public void sendToClient(Object message) throws Exception {
-        String json = objectMapper.writeValueAsString(message);
-        Object deserialized = objectMapper.readValue(json, Object.class);
+        String json = gson.toJson(message);
+        Object deserialized = gson.fromJson(json, Object.class);
         clientSideReceiver.onReceiveMessage(deserialized, clientSideClient);
     }
 
