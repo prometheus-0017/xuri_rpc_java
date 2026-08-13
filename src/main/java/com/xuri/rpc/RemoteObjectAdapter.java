@@ -2,10 +2,8 @@ package com.xuri.rpc;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Proxy;
 import java.util.*;
 
 /**
@@ -16,11 +14,12 @@ import java.util.*;
  *
  * 适配规则：
  * - 值本身已符合目标类型 → 原样传递（如声明为Object、RemoteProxyObject、Map等）
- * - 远程代理 + 接口类型 → 生成动态代理，方法名直接转发
- * - RemoteCallable + 函数式接口 → 生成动态代理，唯一抽象方法映射到__call__
+ * - 远程代理 + 接口类型 → 通过RemoteProxyFactory生成代理，方法名直接转发
+ * - RemoteCallable + 函数式接口 → 通过RemoteProxyFactory生成代理，唯一抽象方法映射到__call__
  * - 数字类型 → 按目标类型做宽化转换（JSON传输后统一是Integer/Double）
  *
- * 由于JDK动态代理只能实现接口，参数声明为具体类时无法适配。
+ * 默认的JDK动态代理工厂只能实现接口，参数声明为具体类时无法适配。
+ * 切换到ByteBuddy工厂后，可以支持具体类的代理。
  */
 public class RemoteObjectAdapter {
 
@@ -105,41 +104,11 @@ public class RemoteObjectAdapter {
     }
 
     /**
-     * 为远程代理生成实现指定接口的动态代理。
+     * 为远程代理生成实现指定类型的代理。
+     * 使用当前配置的 {@link RemoteProxyFactory} 创建代理实例。
      */
-    public static Object asInterface(RemoteProxyObject remote, Class<?> interfaceType) {
-        if (!interfaceType.isInterface()) {
-            throw new IllegalArgumentException(
-                    "Cannot adapt remote object to " + interfaceType.getName() + ": only interfaces are supported");
-        }
-        // RemoteCallable只有__call__成员，需要把函数式接口的唯一抽象方法映射过去
-        String callableMethodName = null;
-        if (remote instanceof Client.RemoteCallable) {
-            Method sam = findSingleAbstractMethod(interfaceType);
-            if (sam != null) {
-                callableMethodName = sam.getName();
-            }
-        }
-        ClassLoader loader = interfaceType.getClassLoader();
-        if (loader == null) {
-            loader = RemoteObjectAdapter.class.getClassLoader();
-        }
-        return Proxy.newProxyInstance(loader, new Class<?>[]{interfaceType},
-                new RemoteInvocationHandler(remote, callableMethodName));
-    }
-
-    /**
-     * 查找接口的唯一抽象方法（函数式接口的SAM），不唯一时返回null。
-     */
-    private static Method findSingleAbstractMethod(Class<?> interfaceType) {
-        Method found = null;
-        for (Method m : interfaceType.getMethods()) {
-            if (!Modifier.isAbstract(m.getModifiers())) continue;
-            if (m.getDeclaringClass() == Object.class) continue;
-            if (found != null) return null;
-            found = m;
-        }
-        return found;
+    public static Object asInterface(RemoteProxyObject remote, Class<?> targetType) {
+        return RpcFramework.getRemoteProxyFactory().createProxy(remote, targetType);
     }
 
     private static boolean isInstanceOf(Object value, Class<?> targetType) {
@@ -302,74 +271,5 @@ public class RemoteObjectAdapter {
             Array.set(array, i, element);
         }
         return array;
-    }
-
-    /**
-     * 把接口方法调用转发为远程调用。
-     */
-    private static class RemoteInvocationHandler implements InvocationHandler {
-        private final RemoteProxyObject remote;
-        private final String callableMethodName;
-
-        RemoteInvocationHandler(RemoteProxyObject remote, String callableMethodName) {
-            this.remote = remote;
-            this.callableMethodName = callableMethodName;
-        }
-
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            if (method.getDeclaringClass() == Object.class) {
-                String name = method.getName();
-                if ("equals".equals(name)) {
-                    return isSameRemote(args[0]);
-                }
-                if ("hashCode".equals(name)) {
-                    return Integer.valueOf(remote.hashCode());
-                }
-                if ("toString".equals(name)) {
-                    return remote.toString();
-                }
-            }
-
-            String methodName = method.getName().equals(callableMethodName) ? "__call__" : method.getName();
-            Object[] callArgs = (args != null) ? args : new Object[0];
-            Object result;
-            try {
-                result = remote.invoke(methodName, callArgs);
-            } catch (Exception e) {
-                throw translate(e, method);
-            }
-
-            Class<?> returnType = method.getReturnType();
-            if (returnType == void.class || returnType == Void.class) {
-                return null;
-            }
-            return adapt(result, returnType);
-        }
-
-        private Boolean isSameRemote(Object other) {
-            if (other == null || !Proxy.isProxyClass(other.getClass())) {
-                return Boolean.FALSE;
-            }
-            InvocationHandler handler = Proxy.getInvocationHandler(other);
-            if (!(handler instanceof RemoteInvocationHandler)) {
-                return Boolean.FALSE;
-            }
-            return Boolean.valueOf(remote.equals(((RemoteInvocationHandler) handler).remote));
-        }
-
-        /**
-         * 远程调用抛出的异常若不在接口方法的声明列表中，包装为RuntimeException。
-         */
-        private Throwable translate(Exception e, Method method) {
-            if (e instanceof RuntimeException) {
-                return e;
-            }
-            for (Class<?> declared : method.getExceptionTypes()) {
-                if (declared.isInstance(e)) {
-                    return e;
-                }
-            }
-            return new RuntimeException(e);
-        }
     }
 }

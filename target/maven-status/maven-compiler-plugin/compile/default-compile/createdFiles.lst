@@ -1,4 +1,3 @@
-com\xuri\rpc\RemoteObjectAdapter$RemoteInvocationHandler.class
 com\xuri\rpc\Response.class
 com\xuri\rpc\ArgTranslator$AsProxyFunction.class
 com\xuri\rpc\CallableObject.class
@@ -9,10 +8,13 @@ com\xuri\rpc\Client$RemoteCallable.class
 com\xuri\rpc\Client.class
 com\xuri\rpc\RemoteObjectAdapter.class
 com\xuri\rpc\MemberInfo.class
+com\xuri\rpc\ByteBuddyProxyFactory.class
 com\xuri\rpc\MessageReceiverOptions.class
 com\xuri\rpc\PreArgObj.class
 com\xuri\rpc\MessageReceiver$Interceptor.class
+com\xuri\rpc\RemoteProxyFactory.class
 com\xuri\rpc\Client$1.class
+com\xuri\rpc\JdkDynamicProxyFactory$RemoteInvocationHandler.class
 com\xuri\rpc\Client$AutoWrapper.class
 com\xuri\rpc\ArgTranslator.class
 com\xuri\rpc\ObjectOfProxyManager$ProxyObjectHandler.class
@@ -24,6 +26,7 @@ com\xuri\rpc\DumpChannel$2.class
 com\xuri\rpc\MessageReceiver$2.class
 com\xuri\rpc\RemoteProxyObject.class
 com\xuri\rpc\MessageReceiver.class
+com\xuri\rpc\ByteBuddyProxyFactory$ByteBuddyInterceptor.class
 com\xuri\rpc\DumpChannel$ServerResult.class
 com\xuri\rpc\MessageReceiver$5.class
 com\xuri\rpc\RpcFramework.class
@@ -36,6 +39,7 @@ com\xuri\rpc\ISender.class
 com\xuri\rpc\MessageReceiver$4.class
 com\xuri\rpc\ObjectOfProxyManager.class
 com\xuri\rpc\DumpChannel$1.class
+com\xuri\rpc\JdkDynamicProxyFactory.class
 com\xuri\rpc\MessageReceiver$NextFunction.class
 com\xuri\rpc\Client$2.class
 com\xuri\rpc\DumpChannel$ServerFactory.class

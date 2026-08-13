@@ -15,6 +15,7 @@ public class RpcFramework {
     private static volatile String hostId = null;
     private static volatile boolean debugFlag = false;
     private static volatile boolean autoConvertDataToObject = false;
+    private static volatile RemoteProxyFactory remoteProxyFactory = new JdkDynamicProxyFactory();
     private static final AtomicLong idCounter = new AtomicLong(0);
 
     /** 每个hostId对应一个MessageReceiverOptions */
@@ -49,6 +50,22 @@ public class RpcFramework {
 
     public static boolean getAutoConvertDataToObject() {
         return autoConvertDataToObject;
+    }
+
+    /**
+     * 设置远程代理工厂，用于控制远程对象的注入方式。
+     * 默认使用 {@link JdkDynamicProxyFactory}（基于JDK动态代理，仅支持接口）。
+     * 可切换为 {@link ByteBuddyProxyFactory}（支持接口和具体类）。
+     */
+    public static void setRemoteProxyFactory(RemoteProxyFactory factory) {
+        if (factory == null) {
+            throw new IllegalArgumentException("remoteProxyFactory不能为null");
+        }
+        remoteProxyFactory = factory;
+    }
+
+    public static RemoteProxyFactory getRemoteProxyFactory() {
+        return remoteProxyFactory;
     }
 
     public static String generateId(String hostIdParam) {
@@ -156,5 +173,6 @@ public class RpcFramework {
         hostId = null;
         debugFlag = false;
         autoConvertDataToObject = false;
+        remoteProxyFactory = new JdkDynamicProxyFactory();
     }
 }
