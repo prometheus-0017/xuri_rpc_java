@@ -1,5 +1,6 @@
 com\xuri\rpc\ReturnTypesTest$5.class
 com\xuri\rpc\NullTest$2.class
+com\xuri\rpc\AutoConvertTest$1.class
 com\xuri\rpc\CallbackTest.class
 com\xuri\rpc\ObjectProxyTest$ItemProcessService.class
 com\xuri\rpc\ObjectProxyTest$2.class
@@ -20,6 +21,7 @@ com\xuri\rpc\InterfaceAdaptTest$2.class
 com\xuri\rpc\ReturnTypesTest.class
 com\xuri\rpc\TestHelper$TestProcess.class
 com\xuri\rpc\ReturnTypesTest$1.class
+com\xuri\rpc\AutoConvertTest$UserData.class
 com\xuri\rpc\BaseTest.class
 com\xuri\rpc\InterfaceAdaptTest$ResultHandler.class
 com\xuri\rpc\NullTest$MixedNullService.class
@@ -28,6 +30,7 @@ com\xuri\rpc\ReturnTypesTest$4.class
 com\xuri\rpc\ExceptionTest$FailingService.class
 com\xuri\rpc\InterfaceAdaptTest$Counter.class
 com\xuri\rpc\UnitApiTest.class
+com\xuri\rpc\AutoConvertTest.class
 com\xuri\rpc\ReturnTypesTest$7.class
 com\xuri\rpc\FunctionProxyTest$1.class
 com\xuri\rpc\FunctionProxyTest$MultiplierService.class
@@ -41,6 +44,7 @@ com\xuri\rpc\ReturnTypesTest$MainService.class
 com\xuri\rpc\CallbackTest$1.class
 com\xuri\rpc\NullTest$1.class
 com\xuri\rpc\FunctionProxyTest.class
+com\xuri\rpc\AutoConvertTest$UserService.class
 com\xuri\rpc\TestHelper.class
 com\xuri\rpc\InterfaceAdaptTest$4.class
 com\xuri\rpc\ReturnTypesTest$6.class

@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class RpcFramework {
     private static volatile String hostId = null;
     private static volatile boolean debugFlag = false;
+    private static volatile boolean autoConvertDataToObject = false;
     private static final AtomicLong idCounter = new AtomicLong(0);
 
     /** 每个hostId对应一个MessageReceiverOptions */
@@ -36,6 +37,18 @@ public class RpcFramework {
 
     public static boolean getDebugFlag() {
         return debugFlag;
+    }
+
+    /**
+     * 设置是否自动将字典/列表转换为Java对象。
+     * 启用后，在invoke之前会尝试将Map转换为目标Java对象，将List转换为目标数组或集合。
+     */
+    public static void setAutoConvertDataToObject(boolean flag) {
+        autoConvertDataToObject = flag;
+    }
+
+    public static boolean getAutoConvertDataToObject() {
+        return autoConvertDataToObject;
     }
 
     public static String generateId(String hostIdParam) {
@@ -142,5 +155,6 @@ public class RpcFramework {
         idCounter.set(0);
         hostId = null;
         debugFlag = false;
+        autoConvertDataToObject = false;
     }
 }

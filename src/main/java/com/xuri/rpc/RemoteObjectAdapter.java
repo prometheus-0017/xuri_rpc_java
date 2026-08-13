@@ -1,9 +1,12 @@
 package com.xuri.rpc;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
+import java.util.*;
 
 /**
  * 远程对象适配器。
@@ -50,6 +53,15 @@ public class RemoteObjectAdapter {
         if (value instanceof RemoteProxyObject && targetType.isInterface()) {
             return asInterface((RemoteProxyObject) value, targetType);
         }
+        
+        // 如果启用了自动转换，尝试将Map/List转换为Java对象
+        if (RpcFramework.getAutoConvertDataToObject()) {
+            Object converted = tryConvertDataToObject(value, targetType);
+            if (converted != null) {
+                return converted;
+            }
+        }
+        
         Object coerced = coerce(value, targetType);
         return (coerced != null) ? coerced : value;
     }
@@ -82,6 +94,12 @@ public class RemoteObjectAdapter {
         }
         if (value instanceof RemoteProxyObject) {
             return targetType.isInterface();
+        }
+        // 如果启用了自动转换，检查是否可以转换
+        if (RpcFramework.getAutoConvertDataToObject()) {
+            if (canConvertDataToObject(value, targetType)) {
+                return true;
+            }
         }
         return coerce(value, targetType) != null;
     }
@@ -159,6 +177,131 @@ public class RemoteObjectAdapter {
         if (primitiveType == boolean.class) return Boolean.class;
         if (primitiveType == char.class) return Character.class;
         return primitiveType; // void
+    }
+
+    /**
+     * 尝试将Map/List转换为Java对象。
+     * 返回null表示无法转换。
+     */
+    private static Object tryConvertDataToObject(Object value, Class<?> targetType) {
+        // Map → Java对象
+        if (value instanceof Map && shouldConvertMapToObject(targetType)) {
+            return convertMapToObject((Map<?, ?>) value, targetType);
+        }
+        
+        // List → 数组
+        if (value instanceof List && targetType.isArray()) {
+            return convertListToArray((List<?>) value, targetType.getComponentType());
+        }
+        
+        return null;
+    }
+
+    /**
+     * 检查是否可以将Map/List转换为目标类型。
+     */
+    private static boolean canConvertDataToObject(Object value, Class<?> targetType) {
+        if (value instanceof Map && shouldConvertMapToObject(targetType)) {
+            return true;
+        }
+        if (value instanceof List && targetType.isArray()) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 判断是否应该将Map转换为对象。
+     * 排除接口、抽象类、基本类型包装类、String、集合接口等。
+     */
+    private static boolean shouldConvertMapToObject(Class<?> targetType) {
+        if (targetType.isInterface() || Modifier.isAbstract(targetType.getModifiers())) {
+            return false;
+        }
+        if (targetType.isPrimitive() || isWrapperType(targetType)) {
+            return false;
+        }
+        if (targetType == String.class) {
+            return false;
+        }
+        // 排除标准JDK类型
+        if (targetType.getName().startsWith("java.")) {
+            return false;
+        }
+        // 必须有默认构造函数
+        try {
+            targetType.getDeclaredConstructor();
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
+    /**
+     * 判断是否是基本类型包装类。
+     */
+    private static boolean isWrapperType(Class<?> type) {
+        return type == Integer.class || type == Long.class || type == Double.class ||
+               type == Float.class || type == Short.class || type == Byte.class ||
+               type == Boolean.class || type == Character.class;
+    }
+
+    /**
+     * 将Map转换为Java对象。
+     */
+    private static Object convertMapToObject(Map<?, ?> map, Class<?> targetType) {
+        try {
+            Object instance = targetType.getDeclaredConstructor().newInstance();
+            
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                String fieldName = String.valueOf(entry.getKey());
+                Object fieldValue = entry.getValue();
+                
+                try {
+                    Field field = targetType.getDeclaredField(fieldName);
+                    field.setAccessible(true);
+                    
+                    Class<?> fieldType = field.getType();
+                    Object convertedValue = adapt(fieldValue, fieldType);
+                    
+                    // 处理基本类型的转换
+                    if (fieldType.isPrimitive() && convertedValue != null) {
+                        if (fieldType == int.class && convertedValue instanceof Number) {
+                            convertedValue = ((Number) convertedValue).intValue();
+                        } else if (fieldType == long.class && convertedValue instanceof Number) {
+                            convertedValue = ((Number) convertedValue).longValue();
+                        } else if (fieldType == double.class && convertedValue instanceof Number) {
+                            convertedValue = ((Number) convertedValue).doubleValue();
+                        } else if (fieldType == float.class && convertedValue instanceof Number) {
+                            convertedValue = ((Number) convertedValue).floatValue();
+                        } else if (fieldType == boolean.class && convertedValue instanceof Boolean) {
+                            convertedValue = convertedValue;
+                        }
+                    }
+                    
+                    field.set(instance, convertedValue);
+                } catch (NoSuchFieldException e) {
+                    // 字段不存在，跳过
+                }
+            }
+            
+            return instance;
+        } catch (Exception e) {
+            // 转换失败，返回null
+            return null;
+        }
+    }
+
+    /**
+     * 将List转换为数组。
+     */
+    private static Object convertListToArray(List<?> list, Class<?> componentType) {
+        Object array = Array.newInstance(componentType, list.size());
+        for (int i = 0; i < list.size(); i++) {
+            Object element = adapt(list.get(i), componentType);
+            Array.set(array, i, element);
+        }
+        return array;
     }
 
     /**
